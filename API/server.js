@@ -2,20 +2,33 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 const app = express();
-const port = 3000; // Port number for your API
+const port = 3000;
 
-// Middleware to parse JSON request body
 app.use(bodyParser.json());
 
-// Endpoint to receive the player's message from the game
 app.post('/api/send-message', async (req, res) => {
-  const userInput = req.body.text; // Get the text input from the request body
+  const userInput = req.body.text;
 
   try {
-    // Replace the fixed response with the user input echoed back
-    const generatedResponse = userInput;
+    const fetch = require('node-fetch'); // Use dynamic import instead of require
+    const response = await fetch('https://api.openai.com/v1/engines/davinci-codex/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer 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' // Replace with your OpenAI API key
+      },
+      body: JSON.stringify({
+        prompt: userInput,
+        max_tokens: 50,
+        temperature: 0.7,
+        n: 1,
+        stop: ['\n']
+      })
+    });
 
-    // Send the generated response back to the game
+    const { choices } = await response.json();
+    const generatedResponse = choices[0].text.trim();
+
     res.json({ response: generatedResponse });
   } catch (error) {
     console.error('Error:', error);
@@ -23,7 +36,6 @@ app.post('/api/send-message', async (req, res) => {
   }
 });
 
-// Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
