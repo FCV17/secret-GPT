@@ -2,7 +2,7 @@
 
 Welcome to Secret GPT, an immersive detective role-playing game where you step into the shoes of a modern-day detective in a sprawling city filled with intrigue and crime. Uncover a web of high-profile cases, shady corporations, and augmented criminals as you solve complex mysteries that will shape the fate of the city.
 
-[cover image](https://github.com/FCV17/secret-gpt/blob/master/img/cover/cover.png)
+![cover image](https://github.com/FCV17/secret-gpt/blob/master/img/cover/cover.png)
 
 
 **Key Features:**
