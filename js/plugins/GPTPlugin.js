@@ -73,10 +73,15 @@ function wrapText(text, maxLength) {
   const param2Value = Number(pluginParams['param2']);
 
   PluginManager.registerCommand(pluginName, "sendGptRequest", function (args) {
-    const userInput = args.userInput;
-    const maxLength = parseInt(args.maxLength, 10) || 40;
-    const eventId = parseInt(args.eventId, 10) || 0;
-    const eventPageId = parseInt(args.eventPageId, 10) || 0;
+  const userInput = window.prompt("Enter Text:");
+  if (userInput === null) {
+    // Player cancelled the prompt, do nothing.
+    return;
+  }
+
+  const maxLength = parseInt(args.maxLength, 10) || 40;
+  const eventId = parseInt(args.eventId, 10) || 0;
+  const eventPageId = parseInt(args.eventPageId, 10) || 0;
 
     const url = "http://localhost:3000/api/send-message"; // Adjust the URL as needed
 
