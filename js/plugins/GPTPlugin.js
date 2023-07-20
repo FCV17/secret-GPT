@@ -16,6 +16,7 @@
  * @text User Input
  * @desc The text input provided by the player.
  * @type multiline_string
+ * @default 
  *
  * @arg maxLength
  * @text Max Length
@@ -35,18 +36,22 @@
  * @type number
  * @default 0
  *
- * @param param1
- * @text Parameter 1
- * @desc Description for Parameter 1.
- * @default Hello World
- * @type string
+ * @arg actorImage
+ * @text Actor Image
+ * @desc The default actor image to be displayed in the response window.
+ * @type file
+ * @dir img/faces
+ * @default Actor1
  *
- * @param param2
- * @text Parameter 2
- * @desc Description for Parameter 2.
- * @default 42
- * @type number
+ * @arg actorName
+ * @text Actor Name
+ * @desc The default actor name to be displayed in the response window.
+ * @type string
+ * @default GPT Wizard
  */
+
+var defaultActorImage = "Actor1"; // Default actor image
+var defaultActorName = "GPT Wizard"; // Default actor name
 
 function wrapText(text, maxLength) {
   const words = text.split(' ');
@@ -66,26 +71,26 @@ function wrapText(text, maxLength) {
   return wrappedText;
 }
 
+function showGptResponse(response, actorImage, actorName) {
+  $gameMessage.clear();
+  $gameMessage.setFaceImage(actorImage, 5);
+  $gameMessage.setSpeakerName(actorName);
+  $gameMessage.add(response);
+  $gameVariables.setValue(5, 1);
+}
+
 (() => {
   const pluginName = "GPTPlugin";
-  const pluginParams = PluginManager.parameters(pluginName);
-  const param1Value = String(pluginParams['param1']);
-  const param2Value = Number(pluginParams['param2']);
 
   PluginManager.registerCommand(pluginName, "sendGptRequest", function (args) {
-  const userInput = window.prompt("Enter Text:");
-  if (userInput === null) {
-    // Player cancelled the prompt, do nothing.
-    return;
-  }
+    const maxLength = parseInt(args.maxLength, 10) || 40;
+    const eventId = parseInt(args.eventId, 10) || 0;
+    const eventPageId = parseInt(args.eventPageId, 10) || 0;
+    const userInput = args.userInput || window.prompt("Please enter your response:");
+    const actorImage = String(args.actorImage || defaultActorImage);
+    const actorName = String(args.actorName || defaultActorName);
 
-  const maxLength = parseInt(args.maxLength, 10) || 40;
-  const eventId = parseInt(args.eventId, 10) || 0;
-  const eventPageId = parseInt(args.eventPageId, 10) || 0;
-
-    const url = "http://localhost:3000/api/send-message"; // Adjust the URL as needed
-
-    const requestOptions = {
+	  const requestOptions = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -95,7 +100,7 @@ function wrapText(text, maxLength) {
 
     console.log("Sending request to server...");
 
-    fetch(url, requestOptions)
+    fetch("http://localhost:3000/api/send-message", requestOptions)
       .then(function (response) {
         if (response.ok) {
           return response.json();
@@ -107,11 +112,7 @@ function wrapText(text, maxLength) {
         console.log("Received response from server:", data);
         const wrappedResponse = wrapText(data.response, maxLength);
 
-        $gameMessage.clear();
-        $gameMessage.setFaceImage("Actor1", 5);
-        $gameMessage.setSpeakerName("GPT Wizard");
-        $gameMessage.add(wrappedResponse);
-        $gameVariables.setValue(5, 1);
+        showGptResponse(wrappedResponse, actorImage, actorName);
 
         $gameMap.event(eventId).start(eventPageId);
       })
