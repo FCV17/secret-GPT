@@ -1,5 +1,3 @@
-
-
 /*:
  * @plugindesc [RPG Maker MZ] [Version 1.0] [FCV17]
  * 
@@ -50,6 +48,58 @@
  * @desc The default actor name to be displayed in the response window.
  * @type string
  * @default GPT Wizard
+ *
+ * @command storeUserInput
+ * @text Store User Input
+ * @desc Stores the user input data and sends it to the server as JSON.
+ *
+ * @arg name
+ * @text Name 
+ * @desc Name of the character.
+ * @type string
+ * @default GPT Wizard
+ *
+ * @arg traits
+ * @text Personality Traits
+ * @desc The traits of the character stored as a JSON array.
+ * @type string
+ * @default ["friendly", "optimistic", "adventurous"]
+ *
+ * @arg dialogueStyle
+ * @text Dialogue Style
+ * @desc The dialogue style of the character.
+ * @type string
+ * @default casual
+ *
+ * @arg backgroundStory
+ * @text Background Story
+ * @desc The background story of the character.
+ * @type string
+ * @default John is a skilled adventurer who has traveled the world in search of hidden treasures. He is always eager to help others and believes in the power of friendship.
+ *
+ * @arg eventsKnowledge
+ * @text Events Knowledge
+ * @desc The character's knowledge of events stored as a JSON object.
+ * @type string
+ * @default {"Event 1": "Crime scene", "Event 2": "Alice affair with Joseph"}
+ *
+ * @arg interests
+ * @text Interests
+ * @desc The character's interests stored as a JSON object.
+ * @type string
+ * @default {"Technology": 7, "Cars": 9}
+ *
+ * @arg supportiveness
+ * @text Supportiveness
+ * @desc The supportiveness score of the character (0 to 10).
+ * @type number
+ * @default 10
+ *
+ * @arg conditionsToIncreaseSupportiveness
+ * @text Conditions to Increase Supportiveness
+ * @desc The conditions to increase the supportiveness score stored as a JSON object.
+ * @type string
+ * @default {"Retrieving a lost item": 1, "Helping a friend in need": 2, "Sharing valuable information": 1, "Showing empathy and understanding": 1, "Offering assistance in difficult situations": 2}
  */
 
 var defaultActorImage = "Actor1"; // Default actor image
@@ -92,7 +142,7 @@ function showGptResponse(response, actorImage, actorName) {
     const actorImage = String(args.actorImage || defaultActorImage);
     const actorName = String(args.actorName || defaultActorName);
 
-	  const requestOptions = {
+    const requestOptions = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -122,4 +172,52 @@ function showGptResponse(response, actorImage, actorName) {
         console.error("Error:", error);
       });
   });
+
+  PluginManager.registerCommand(pluginName, "storeUserInput", function (args) {
+    const userInput = args.userInput || '';
+    const traits = JSON.parse(args.traits || '[]');
+    const dialogueStyle = args.dialogueStyle || 'casual';
+    const backgroundStory = args.backgroundStory || '';
+    const eventsKnowledge = JSON.parse(args.eventsKnowledge || '{}');
+    const interests = JSON.parse(args.interests || '{}');
+    const supportiveness = parseInt(args.supportiveness, 10) || 0;
+    const conditionsToIncreaseSupportiveness = JSON.parse(args.conditionsToIncreaseSupportiveness || '{}');
+
+    const storedData = {
+      name: userInput,
+      personality: {
+        traits: traits,
+        dialogueStyle: dialogueStyle
+      },
+      "background story": backgroundStory,
+      "Events knowledge": eventsKnowledge,
+      interests: interests,
+      supportiveness: supportiveness,
+      conditionsToIncreaseSupportiveness: conditionsToIncreaseSupportiveness
+    };
+
+    // Sending 'storedData' to the server
+    const requestOptions = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(storedData),
+    };
+
+    console.log("Sending user input to server...");
+
+    fetch("http://localhost:3000/character", requestOptions)
+      .then(function (response) {
+        if (response.ok) {
+          console.log("User input sent successfully!");
+        } else {
+          throw new Error("HTTP request failed");
+        }
+      })
+      .catch(function (error) {
+        console.error("Error:", error);
+      });
+  });
+
 })();
