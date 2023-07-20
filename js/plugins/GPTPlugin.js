@@ -1,3 +1,5 @@
+
+
 /*:
  * @plugindesc [RPG Maker MZ] [Version 1.0] [FCV17]
  * 

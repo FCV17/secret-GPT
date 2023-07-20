@@ -1,0 +1,24 @@
+{
+  "name": "John",
+  "personality": {
+    "traits": ["friendly", "optimistic", "adventurous"],
+    "dialogueStyle": "casual"
+  },
+  "background story": "John is a skilled adventurer who has traveled the world in search of hidden treasures. He is always eager to help others and believes in the power of friendship.",
+  "Events knowledge": {
+    "Event 1": "Crime scene",
+    "Event 2": "Alice affair with Joseph"
+  },
+  "interests": {
+    "Technology": 7,
+    "Cars": 9
+  },
+  "supportiveness": 5,
+  "conditionsToIncreaseSupportiveness": {
+    "Retrieving a lost item": 1,
+    "Helping a friend in need": 2,
+    "Sharing valuable information": 1,
+    "Showing empathy and understanding": 1,
+    "Offering assistance in difficult situations": 2
+  }
+}
