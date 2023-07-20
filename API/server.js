@@ -55,7 +55,7 @@ app.post('/api/send-message', async (req, res) => {
 });
 
 // Logging middleware to log the stored data
-app.post('/character', (req, res) => {
+app.post('/api/character', (req, res) => {
   console.log('Received character data:', req.body);
   // Process the character data here as needed
   res.sendStatus(200); // Send a success response
