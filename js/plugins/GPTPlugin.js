@@ -8,9 +8,9 @@
  * This plugin allows you to send a user input to a server using an API endpoint,
  * and display the server's response in a wrapped format in RPG Maker MZ.
  *
- * @command sendGptRequest
- * @text Send GPT Request
- * @desc Sends the user input to the server and displays the wrapped response.
+ * @command sendRequest
+ * @text Send Request
+ * @desc Sends the user input to the server and stores the response for the "Display Response" command.
  *
  * @arg userInput
  * @text User Input
@@ -18,39 +18,8 @@
  * @type multiline_string
  * @default 
  *
- * @arg maxLength
- * @text Max Length
- * @desc The maximum length for wrapping the server response (default: 40).
- * @type number
- * @default 40
- *
- * @arg eventId
- * @text Event ID
- * @desc The ID of the event to continue after displaying the response (default: 0).
- * @type number
- * @default 0
- *
- * @arg eventPageId
- * @text Event Page ID
- * @desc The ID of the event page to continue after displaying the response (default: 0).
- * @type number
- * @default 0
- *
- * @arg actorImage
- * @text Actor Image
- * @desc The default actor image to be displayed in the response window.
- * @type file
- * @dir img/faces
- * @default Actor1
- *
- * @arg actorName
- * @text Actor Name
- * @desc The default actor name to be displayed in the response window.
- * @type string
- * @default GPT Wizard
- *
- * @command storeUserInput
- * @text Store User Input
+ * @command characterContext
+ * @text Character Context
  * @desc Stores the user input data and sends it to the server as JSON.
  *
  * @arg name
@@ -100,10 +69,42 @@
  * @desc The conditions to increase the supportiveness score stored as a JSON object.
  * @type string
  * @default {"Retrieving a lost item": 1, "Helping a friend in need": 2, "Sharing valuable information": 1, "Showing empathy and understanding": 1, "Offering assistance in difficult situations": 2}
+ *
+ * @command displayResponse
+ * @text Display Response
+ * @desc Displays the stored response in the response window.
+ *
+ * @arg eventId
+ * @text Event ID
+ * @desc The ID of the event to continue after displaying the response (default: 0).
+ * @type number
+ * @default 0
+ *
+ * @arg eventPageId
+ * @text Event Page ID
+ * @desc The ID of the event page to continue after displaying the response (default: 0).
+ * @type number
+ * @default 0
+ *
+ * @arg actorImage
+ * @text Actor Image
+ * @desc The default actor image to be displayed in the response window.
+ * @type file
+ * @dir img/faces
+ * @default Actor1
+ *
+ * @arg actorName
+ * @text Actor Name
+ * @desc The default actor name to be displayed in the response window.
+ * @type string
+ * @default GPT Wizard
+ *
+ * @arg maxLength
+ * @text Max Length
+ * @desc The maximum length for wrapping the server response (default: 40).
+ * @type number
+ * @default 40
  */
-
-var defaultActorImage = "Actor1"; // Default actor image
-var defaultActorName = "GPT Wizard"; // Default actor name
 
 function wrapText(text, maxLength) {
   const words = text.split(' ');
@@ -111,36 +112,47 @@ function wrapText(text, maxLength) {
   let currentLine = '';
 
   for (const word of words) {
-    if (currentLine.length + word.length <= maxLength) {
-      currentLine += (currentLine ? ' ' : '') + word;
+    const potentialLine = currentLine + (currentLine ? ' ' : '') + word;
+    if (potentialLine.length <= maxLength) {
+      currentLine = potentialLine;
     } else {
       wrappedText += (wrappedText ? '\n' : '') + currentLine;
       currentLine = word;
     }
   }
 
-  wrappedText += (wrappedText ? '\n' : '') + currentLine;
+  if (currentLine) {
+    wrappedText += (wrappedText ? '\n' : '') + currentLine;
+  }
+
   return wrappedText;
 }
 
-function showGptResponse(response, actorImage, actorName) {
+function showGptResponse(response, eventId, eventPageId, actorImage, actorName) {
+  const maxLength = $gameVariables.value(7) || 40;
+  const wrappedResponse = wrapText(response, maxLength);
+
   $gameMessage.clear();
   $gameMessage.setFaceImage(actorImage, 5);
   $gameMessage.setSpeakerName(actorName);
-  $gameMessage.add(response);
+  $gameMessage.add(wrappedResponse);
   $gameVariables.setValue(5, 1);
+
+  if (eventId > 0) {
+    const event = $gameMap.event(eventId);
+    if (event) {
+      event.start(eventPageId);
+    }
+  }
 }
 
 (() => {
   const pluginName = "GPTPlugin";
 
-  PluginManager.registerCommand(pluginName, "sendGptRequest", function (args) {
-    const maxLength = parseInt(args.maxLength, 10) || 40;
+  PluginManager.registerCommand(pluginName, "sendRequest", function (args) {
     const eventId = parseInt(args.eventId, 10) || 0;
     const eventPageId = parseInt(args.eventPageId, 10) || 0;
     const userInput = args.userInput || window.prompt("Please enter your response:");
-    const actorImage = String(args.actorImage || defaultActorImage);
-    const actorName = String(args.actorName || defaultActorName);
 
     const requestOptions = {
       method: "POST",
@@ -162,18 +174,15 @@ function showGptResponse(response, actorImage, actorName) {
       })
       .then(function (data) {
         console.log("Received response from server:", data);
-        const wrappedResponse = wrapText(data.response, maxLength);
 
-        showGptResponse(wrappedResponse, actorImage, actorName);
-
-        $gameMap.event(eventId).start(eventPageId);
+        // Store the response data to be displayed in the response window
+        $gameVariables.setValue(6, data.response);
       })
       .catch(function (error) {
         console.error("Error:", error);
       });
   });
-
-  PluginManager.registerCommand(pluginName, "storeUserInput", function (args) {
+  PluginManager.registerCommand(pluginName, "characterContext", function (args) {
     const userInput = args.userInput || '';
     const traits = JSON.parse(args.traits || '[]');
     const dialogueStyle = args.dialogueStyle || 'casual';
@@ -205,12 +214,12 @@ function showGptResponse(response, actorImage, actorName) {
       body: JSON.stringify(storedData),
     };
 
-    console.log("Sending user input to server...");
+    console.log("Sending character context to server...");
 
     fetch("http://localhost:3000/character", requestOptions)
       .then(function (response) {
         if (response.ok) {
-          console.log("User input sent successfully!");
+          console.log("Character context sent successfully!");
         } else {
           throw new Error("HTTP request failed");
         }
@@ -219,5 +228,17 @@ function showGptResponse(response, actorImage, actorName) {
         console.error("Error:", error);
       });
   });
+  PluginManager.registerCommand(pluginName, "displayResponse", function (args) {
+    const eventId = parseInt(args.eventId, 10) || 0;
+    const eventPageId = parseInt(args.eventPageId, 10) || 0;
+    const actorImage = args.actorImage;
+    const actorName = args.actorName;
 
+    $gameVariables.setValue(7, args.maxLength);
+
+    const response = $gameVariables.value(6);
+    if (typeof response === 'string') {
+      showGptResponse(response, eventId, eventPageId, actorImage, actorName);
+    }
+  });
 })();
