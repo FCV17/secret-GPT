@@ -48,6 +48,11 @@ const env = {
     env: 'OPENAI_API_KEY',
     type: 'string',
     required: true
+  },
+  REDIS_URL: {
+    env: 'REDIS_URL',
+    type: 'string',
+    required: true
   }
 }
 
