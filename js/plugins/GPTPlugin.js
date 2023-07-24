@@ -1,12 +1,24 @@
 /*:
  * @plugindesc [RPG Maker MZ] [Version 1.0] [FCV17]
  * 
+ * @param apiKey
+ * @text API Key
+ * @desc The API key to be used for making requests to the server.
+ * @type string
+ * @default
+ *
  * @author FCV17
  *
  * @help GPTPlugin.js
  *
  * This plugin allows you to send a user input to a server using an API endpoint,
  * and display the server's response in a wrapped format in RPG Maker MZ.
+ *
+ * @param apiKey
+ * @text User API Key
+ * @desc The API key to be used for making requests to the server.
+ * @type string
+ * @default
  *
  * @command sendRequest
  * @text Send Request
@@ -27,6 +39,12 @@
  * @desc Name of the character.
  * @type string
  * @default GPT Wizard
+ *
+ * @arg age
+ * @text Age
+ * @desc The age of the character.
+ * @type number
+ * @default 0
  *
  * @arg traits
  * @text Personality Traits
@@ -105,48 +123,51 @@
  * @type number
  * @default 40
  */
+(function() {
+  // Retrieve the plugin parameters
+  var pluginParams = PluginManager.parameters('GPTPlugin');
+  var apiKey = pluginParams['apiKey'];
+	
+  function wrapText(text, maxLength) {
+    const words = text.split(' ');
+    let wrappedText = '';
+    let currentLine = '';
 
-function wrapText(text, maxLength) {
-  const words = text.split(' ');
-  let wrappedText = '';
-  let currentLine = '';
+    for (const word of words) {
+      const potentialLine = currentLine + (currentLine ? ' ' : '') + word;
+      if (potentialLine.length <= maxLength) {
+        currentLine = potentialLine;
+      } else {
+        wrappedText += (wrappedText ? '\n' : '') + currentLine;
+        currentLine = word;
+      }
+    }
 
-  for (const word of words) {
-    const potentialLine = currentLine + (currentLine ? ' ' : '') + word;
-    if (potentialLine.length <= maxLength) {
-      currentLine = potentialLine;
-    } else {
+    if (currentLine) {
       wrappedText += (wrappedText ? '\n' : '') + currentLine;
-      currentLine = word;
+    }
+
+    return wrappedText;
+  }
+
+  function showGptResponse(response, eventId, eventPageId, actorImage, actorName) {
+    const maxLength = $gameVariables.value(7) || 40;
+    const wrappedResponse = wrapText(response, maxLength);
+
+    $gameMessage.clear();
+    $gameMessage.setFaceImage(actorImage, 5);
+    $gameMessage.setSpeakerName(actorName);
+    $gameMessage.add(wrappedResponse);
+    $gameVariables.setValue(5, 1);
+
+    if (eventId > 0) {
+      const event = $gameMap.event(eventId);
+      if (event) {
+        event.start(eventPageId);
+      }
     }
   }
 
-  if (currentLine) {
-    wrappedText += (wrappedText ? '\n' : '') + currentLine;
-  }
-
-  return wrappedText;
-}
-
-function showGptResponse(response, eventId, eventPageId, actorImage, actorName) {
-  const maxLength = $gameVariables.value(7) || 40;
-  const wrappedResponse = wrapText(response, maxLength);
-
-  $gameMessage.clear();
-  $gameMessage.setFaceImage(actorImage, 5);
-  $gameMessage.setSpeakerName(actorName);
-  $gameMessage.add(wrappedResponse);
-  $gameVariables.setValue(5, 1);
-
-  if (eventId > 0) {
-    const event = $gameMap.event(eventId);
-    if (event) {
-      event.start(eventPageId);
-    }
-  }
-}
-
-(() => {
   const pluginName = "GPTPlugin";
 
   PluginManager.registerCommand(pluginName, "sendRequest", function (args) {
@@ -182,18 +203,19 @@ function showGptResponse(response, eventId, eventPageId, actorImage, actorName) 
         console.error("Error:", error);
       });
   });
+	
   PluginManager.registerCommand(pluginName, "characterContext", function (args) {
     const userInput = args.userInput || '';
+    const age = parseInt(args.age, 10) || 0; 
     const traits = JSON.parse(args.traits || '[]');
     const dialogueStyle = args.dialogueStyle || 'casual';
     const backgroundStory = args.backgroundStory || '';
     const eventsKnowledge = JSON.parse(args.eventsKnowledge || '{}');
     const interests = JSON.parse(args.interests || '{}');
     const supportiveness = parseInt(args.supportiveness, 10) || 0;
-    const conditionsToIncreaseSupportiveness = JSON.parse(args.conditionsToIncreaseSupportiveness || '{}');
-
     const storedData = {
       name: userInput,
+      age: age, 
       personality: {
         traits: traits,
         dialogueStyle: dialogueStyle
@@ -201,19 +223,18 @@ function showGptResponse(response, eventId, eventPageId, actorImage, actorName) 
       "background story": backgroundStory,
       "Events knowledge": eventsKnowledge,
       interests: interests,
-      supportiveness: supportiveness,
-      conditionsToIncreaseSupportiveness: conditionsToIncreaseSupportiveness
+      supportiveness: supportiveness
     };
-
-    // Sending 'storedData' to the server
-    const requestOptions = {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(storedData),
-    };
-
+    // Add the apiKey value to the requestOptions headers
+    const requestOptions = {    
+		method: "POST",
+        headers: {
+			"Content-Type": "application/json",
+            "Authorization": "Bearer " + apiKey
+        },
+        body: JSON.stringify(storedData),
+    };		
+		
     console.log("Sending character context to server...");
 
     fetch("http://localhost:3000/api/character-context", requestOptions)
@@ -228,6 +249,7 @@ function showGptResponse(response, eventId, eventPageId, actorImage, actorName) 
         console.error("Error:", error);
       });
   });
+
   PluginManager.registerCommand(pluginName, "displayResponse", function (args) {
     const eventId = parseInt(args.eventId, 10) || 0;
     const eventPageId = parseInt(args.eventPageId, 10) || 0;

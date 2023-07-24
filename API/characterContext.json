@@ -1,7 +1,6 @@
 {
   "name": "John",
   "age": 35,
-  "gender": "male",	
   "personality": {
     "traits": ["friendly", "optimistic", "adventurous"],
     "dialogueStyle": "casual"
