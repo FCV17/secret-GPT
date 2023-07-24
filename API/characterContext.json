@@ -16,11 +16,4 @@
     "Cars": 9
   },
   "supportiveness": 5,
-  "conditionsToIncreaseSupportiveness": {
-    "Retrieving a lost item": 1,
-    "Helping a friend in need": 2,
-    "Sharing valuable information": 1,
-    "Showing empathy and understanding": 1,
-    "Offering assistance in difficult situations": 2
-  }
 }

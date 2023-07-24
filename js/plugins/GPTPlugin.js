@@ -216,7 +216,7 @@ function showGptResponse(response, eventId, eventPageId, actorImage, actorName) 
 
     console.log("Sending character context to server...");
 
-    fetch("http://localhost:3000/character", requestOptions)
+    fetch("http://localhost:3000/api/character-context", requestOptions)
       .then(function (response) {
         if (response.ok) {
           console.log("Character context sent successfully!");
