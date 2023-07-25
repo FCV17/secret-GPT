@@ -1,4 +1,4 @@
-import { listEngines, createCompletion } from '~/services/openai'
+import { listEngines, createCompletion, generatePrompt } from '~/services/openai'
 
 const { logDebug, logError } = require('src/core-services/logFunctionFactory').getLogger('chat')
 
@@ -37,6 +37,29 @@ router.post('/send-message', async (request, response) => {
   } catch (error) {
     logError('Error:', error?.message)
     response.status(500).json({ error: 'An error occurred' })
+  }
+})
+
+router.post('/generate-prompt', async (request, res) => {
+  const characterJson = request.body
+
+  try {
+    logDebug('send-message request:', characterJson)
+
+    const response = await generatePrompt({ characterJson })
+
+    logDebug('Response:', response)
+
+    const { prompt } = await response
+
+    if (prompt) {
+      res.json({ response: prompt })
+    } else {
+      res.status(500).json({ error: 'No response from the OpenAI API' })
+    }
+  } catch (error) {
+    logError('Error:', error?.message)
+    res.status(500).json({ error: 'An error occurred' })
   }
 })
 
